@@ -85,7 +85,7 @@ class Aircraft():
             self.track.append(t_i)
         if self.track_plotting:
             x_points, y_points = map(list, zip(*self.track))
-            l_i, = self.axis.plot(x_points, y_points, color=self.track_col, alpha=0.8, linewidth=4)
+            l_i, = self.axis.plot(x_points, y_points, color=(0.99, 0, 0.99), alpha=0.25, linewidth=4)
             self.track_plot = l_i
 
     def update_track(self,track=None):

@@ -7,6 +7,7 @@ from sklearn import metrics
 import random
 import sys,subprocess
 from scipy.spatial import distance
+import time
 
 def depth(l):
     if isinstance(l, list):
@@ -70,8 +71,10 @@ class Vertiports():
             sub_names = set(np.array(tower_names)[kmeans.labels_== i])
             tower_range = max([np.linalg.norm(np.subtract(i, c_i)) for i in zip(towers['x'][kmeans.labels_ == i], towers['y'][kmeans.labels_ == i])])
             # self.towers.append(Tower(self.map_center,c_i,tower_range,sub_names))
-            if 'WP52' in sub_names or 'WP308' in sub_names or 'WP9' in sub_names:
-                self.towers.append(Scheduler(self.map_center, c_i, tower_range, sub_names, specfilename='request_handler_example.slugsin', sub_ind=i))
+            if 'WP52' in sub_names or 'WP308' in sub_names or 'WP324' in sub_names:
+                start_t = time.time()
+                self.towers.append(Scheduler(self.map_center, c_i, tower_range, sub_names, specfilename='request_handler_example_large.slugsin', sub_ind=i))
+                print("Time taken for {}: {}".format(i,time.time()-start_t))
             else:
                 self.towers.append(Tower(self.map_center, c_i, tower_range, sub_names,i))
         # print(centroids)
@@ -81,6 +84,10 @@ class Vertiports():
         self.tower_art = []
         for t_i in self.towers:
             t_i.plotTower(ax)
+
+    def plotPorts(self,ax):
+        for p_i in self.array:
+            self.array[p_i].plotPort(ax)
 
     def findTower(self,wp):
         for k_i in self.towers:
@@ -117,6 +124,11 @@ class Vertiport(Vertiports):
         self.loc_xy = super().GPS_2_coord(loc_gps)
         self.name = name
 
+    def plotPort(self, ax):
+        art = mpatches.Circle(self.loc_xy, 0.05, color=(1,0,0), fill=True, linewidth=3)
+        self.tower_art = ax.add_patch(art)
+
+
 class Tower(Vertiports):
     def __init__(self, map_center, centroid, tower_range, sub_names,sub_ind):
         super(Tower, self).__init__(POV_center=map_center)
@@ -140,6 +152,7 @@ class Tower(Vertiports):
         art = mpatches.Circle(self.loc_xy, self.tower_range, color=self.color, fill=False, linewidth=3)
         self.tower_art = ax.add_patch(art)
 
+
     def colorTower(self, col):
         self.color = col
         self.tower_art.set_color(self.color)
@@ -150,19 +163,23 @@ class Tower(Vertiports):
     def towerSchedules(self, filename, allowed_ports):
         schedule = []
         self.allocating_flag = True
-        with open(filename) as fp:
-            for i, raw_line in enumerate(fp):
-                if i == 0:
-                    line = [x.strip() for x in raw_line.split(',')]
-                    no_vehicles = len(line) - 4
-                else:
-                    accept = set()
-                    line = [int(x.strip()) for x in raw_line.split(',')]
-                    for l_i in line[-3:]:
-                        if l_i != 0: accept.add(l_i)
-                    schedule.append(dict([['Requests', line[:-4]], ['Avail', line[-4]], ['No_requests', len(np.nonzero(line[:-4]))], ['Allocate', accept]]))
+        if filename:
+            with open(filename) as fp:
+                for i, raw_line in enumerate(fp):
+                    if i == 0:
+                        line = [x.strip() for x in raw_line.split(',')]
+                        no_vehicles = len(line) - 4
+                    else:
+                        accept = set()
+                        line = [int(x.strip()) for x in raw_line.split(',')]
+                        for l_i in line[-3:]:
+                            if l_i != 0: accept.add(l_i)
+                        schedule.append(dict([['Requests', line[:-4]], ['Avail', line[-4]], ['No_requests', len(np.nonzero(line[:-4]))], ['Allocate', accept]]))
         self.schedule = schedule
-        self.allowed_ports = allowed_ports
+        if allowed_ports:
+            self.allowed_ports = allowed_ports
+        else:
+            self.allowed_ports = list(np.random.choice(list(self.attached_vertiports), 3))
 
     # def activeRequest(self):
     #     assert self.schedule

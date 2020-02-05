@@ -8,10 +8,11 @@ from ast import literal_eval
 from matplotlib.animation import FuncAnimation
 import numpy as np
 from aircraft import Aircraft
-from vertiports import Vertiports
+from vertiports import Vertiports,Scheduler
 import random
 random.seed(4)
 # import texfig
+import time
 
 # ---------- PART 1: Globals
 # plt.rcParams['savefig.bbox'] = 'tight'
@@ -53,7 +54,7 @@ def update(i):
 			for v_i in time_policy[t_i]:
 				if len(verts.findTower_ind(time_policy[t_i][v_i][-1]).vehicle_array) < 8:
 					# in_track = time_policy[t_i][v_i] if time_policy[t_i][v_i][0] in launch_points else [np.random.choice(launch_points),time_policy[t_i][v_i][-1]]
-					in_track = [np.random.choice(launch_points),time_policy[t_i][v_i][-1]]
+					in_track = [np.random.choice(launch_points),np.random.choice(land_points)]
 					track = verts.convertTrack(in_track)
 					vehicle_array.append(Aircraft(loc=tuple(verts.array[in_track[0]].loc_gps)+(100,),POV_center=SF_GPS,col=(0,1,0),ax=ax,track=track,track_col=my_palette(j),land_tower=verts.findTower(in_track[-1]),land_wp=in_track[-1],verts=verts))
 					if len(vehicle_array[-1].scheduler_ind)> 0:vehicle_array[-1].loiter()
@@ -181,14 +182,19 @@ verts.addPorts('Scenarios/areacre.txt')
 verts.towerClusters(10)
 verts.plotTowers(ax)
 time_policy = []
+# for t_i in verts.towers:
+
 # vehicles, policy = policies('Scenarios/policy.txt')
 allowed_ports = ['WP52','WP555','WP322']
 second_tower = ['WP802','WP989','WP778']
 third_tower = ['WP94','WP661','WP9']
-launch_points = ['WP98','WP880','WP14']
-verts.findTower_ind(allowed_ports[2]).towerSchedules('Scenarios/test_medium19.csv',allowed_ports)
-verts.findTower_ind(second_tower[2]).towerSchedules('Scenarios/test_medium40_csv.csv',second_tower)
-verts.findTower_ind(third_tower[2]).towerSchedules('Scenarios/test_medium40_csv.csv',third_tower)
+launch_points = ['WP880','WP14']
+land_points = allowed_ports+second_tower
+for t_i in verts.towers:
+	if isinstance(t_i,Scheduler): t_i.towerSchedules(None,None)
+# verts.findTower_ind(allowed_ports[2]).towerSchedules('Scenarios/test_medium19.csv',allowed_ports)
+# verts.findTower_ind(second_tower[2]).towerSchedules('Scenarios/test_medium40_csv.csv',second_tower)
+# verts.findTower_ind(third_tower[2]).towerSchedules('Scenarios/test_medium40_csv.csv',third_tower)
 
 vehicles, time_policy = schedules('Scenarios/scn_UAM_testW.trp')
 vehicle_array = []
@@ -201,14 +207,14 @@ else:
 		track = verts.convertTrack(policy[v_i])
 		vehicle_array[v_i] = Aircraft(loc=tuple(verts.array[policy[v_i][0][0]].loc_gps)+(100,), POV_center=SF_GPS,col=(0,1,0),ax=ax,track=track,track_col=my_palette(i),verts=verts)
 		i+=1
-#
+#i
 # for i in range(500):
 #     update(i)
 
 
 
-ani = FuncAnimation(fig, update, frames=500, interval=0.02, blit=True,repeat=False)
+# ani = FuncAnimation(fig, update, frames=2, interval=0.02, blit=True,repeat=False)
 # ani = FuncAnimation(fig, update, frames=1000,repeat=False)
-ani.save('Pass_through_allocation_Any.mp4',writer = writer)
-plt.show(block=True)
+# ani.save('Cascade.mp4',writer = writer)
+# plt.show(block=True)
 # plt.show(block=True)

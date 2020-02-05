@@ -180,30 +180,33 @@ verts.addPorts('Scenarios/areacre.txt')
 # f = open('loiter_log.txt',"w")
 verts.towerClusters(10)
 verts.plotTowers(ax)
-time_policy = []
-# vehicles, policy = policies('Scenarios/policy.txt')
-allowed_ports = ['WP52','WP555','WP322']
-second_tower = ['WP802','WP989','WP778']
-third_tower = ['WP94','WP661','WP9']
-launch_points = ['WP98','WP880','WP14']
-verts.findTower_ind(allowed_ports[2]).towerSchedules('Scenarios/test_medium19.csv',allowed_ports)
-verts.findTower_ind(second_tower[2]).towerSchedules('Scenarios/test_medium40_csv.csv',second_tower)
-verts.findTower_ind(third_tower[2]).towerSchedules('Scenarios/test_medium40_csv.csv',third_tower)
-
-vehicles, time_policy = schedules('Scenarios/scn_UAM_testW.trp')
-vehicle_array = []
-vehicle_queue = []
-i = 0
-if time_policy:
-	pass
-else:
-	for v_i in vehicles:
-		track = verts.convertTrack(policy[v_i])
-		vehicle_array[v_i] = Aircraft(loc=tuple(verts.array[policy[v_i][0][0]].loc_gps)+(100,), POV_center=SF_GPS,col=(0,1,0),ax=ax,track=track,track_col=my_palette(i),verts=verts)
-		i+=1
+verts.plotPorts(ax)
+fig.savefig("Data/images/ports.eps")
+# plt.show()
+# time_policy = []
+# # vehicles, policy = policies('Scenarios/policy.txt')
+# allowed_ports = ['WP52','WP555','WP322']
+# second_tower = ['WP802','WP989','WP778']
+# third_tower = ['WP94','WP661','WP9']
+# launch_points = ['WP98','WP880','WP14']
+# verts.findTower_ind(allowed_ports[2]).towerSchedules('Scenarios/test_medium19.csv',allowed_ports)
+# verts.findTower_ind(second_tower[2]).towerSchedules('Scenarios/test_medium40_csv.csv',second_tower)
+# verts.findTower_ind(third_tower[2]).towerSchedules('Scenarios/test_medium40_csv.csv',third_tower)
 #
-for i in range(500):
-	update(i)
-	if i in range(100,150):
-		fig.savefig("Data/images/sequence_" + str(i)+".eps")
+# vehicles, time_policy = schedules('Scenarios/scn_UAM_testW.trp')
+# vehicle_array = []
+# vehicle_queue = []
+# i = 0
+# if time_policy:
+# 	pass
+# else:
+# 	for v_i in vehicles:
+# 		track = verts.convertTrack(policy[v_i])
+# 		vehicle_array[v_i] = Aircraft(loc=tuple(verts.array[policy[v_i][0][0]].loc_gps)+(100,), POV_center=SF_GPS,col=(0,1,0),ax=ax,track=track,track_col=my_palette(i),verts=verts)
+# 		i+=1
+# #
+# for i in range(500):
+# 	update(i)
+# 	if i in range(100,150):
+# 		fig.savefig("Data/images/sequence_" + str(i)+".eps")
 
