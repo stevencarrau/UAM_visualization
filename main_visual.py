@@ -1,6 +1,6 @@
 import json
 import matplotlib
-# matplotlib.use('Qt5Agg')
+matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import math
@@ -13,7 +13,7 @@ import random
 random.seed(4)
 
 
-# ---------- PART 1: Globals
+# ---------- PART 1: Globals for visualization
 # plt.rcParams['savefig.bbox'] = 'tight'
 n_agents = 20
 my_dpi = 96
@@ -36,26 +36,29 @@ prev_time= 0
 j = 0
 
 
+# ----------- PART 2: Time loop for visualization - called in FuncAnimate()
+
 def update(i):
     global prev_time, j, vehicle_queue, verts
     dt = 0.2
     print(i)
-    # loiter_dict = dict([[verts.findTower_ind(allowed_ports[2]), set()], [verts.findTower_ind(second_tower[2]), set()]])
     land_s = False
-    # print(open_slots)
     if time_policy:
         t_i = i*dt
+        # If aircraft takes off at this timestamp
         if time_policy.get(t_i):
-            # Usable cache of 8 aircraft
+            # Usable cache of 8 aircraft in towers requests
             for v_i in time_policy[t_i]:
                 if len(verts.findTower_ind(time_policy[t_i][v_i][-1]).vehicle_array) < 8:
                     track = verts.convertTrack(time_policy[t_i][v_i])
                     vehicle_array.append(Aircraft(loc=tuple(verts.array[time_policy[t_i][v_i][0]].loc_gps)+(100,),POV_center=SF_GPS,col=(0,1,0),ax=ax,track=track,track_col=my_palette(j),land_tower=verts.findTower(time_policy[t_i][v_i][-1]),land_wp=time_policy[t_i][v_i][-1]))
                     verts.findTower_ind(time_policy[t_i][v_i][-1]).add_vehicle(vehicle_array[-1])
                     j += 1
+                # If full then keep a queue to add to next tower
                 else:
                     track = verts.convertTrack(time_policy[t_i][v_i])
                     vehicle_queue.append((v_i,tuple(verts.array[time_policy[t_i][v_i][0]].loc_gps)+(100,),track,verts.findTower(time_policy[t_i][v_i][-1]),time_policy[t_i][v_i][-1],time_policy[t_i][v_i][-1]))
+        # No aircraft in take-off but can be assigned to request cache in this time-step
         else:
             for v_i,v_q in enumerate(vehicle_queue):
                 if len(verts.findTower_ind(v_q[5]).vehicle_array) < 8:
@@ -64,53 +67,39 @@ def update(i):
                     verts.findTower_ind(v_q[5]).add_vehicle(vehicle_array[-1])
                     j += 1
 
+    # Artist array for plotting
     artist_array = []
     landed_drones = []
+    # Cycle through the schedulers for requests
     for t_i in verts.towers:
         if t_i.allocating_flag:
-            # if t_i.avail_slots > 0:
             t_i.queue_full = True
             t_i.activeRequest()
 
-            # t_i.clearRequest()
-
     clear_requests = []
+    # Cycle through schedulers for allocations
     for t_i in verts.towers:
         for ind,v_ind in enumerate(t_i.vehicle_array):
-            # v_i = t_i.vehicle_array[v_ind]
             if t_i.active_request:
                 if v_ind+1 in t_i.active_request['Allocate']:
                     land_s = verts.array[t_i.landWaypoint(ind)].loc_xy
                     print(land_s)
                     clear_requests.append(t_i)
-                    # verts.findTower_ind(v_i.land_wp).no_active += 1
             artist_array += t_i.vehicle_array[v_ind].simulate(dt, land_signal=land_s, operating_number=list(t_i.vehicle_array.values()).index(t_i.vehicle_array[v_ind]))
-        # if v_i.loitering:
-        #     loiter_dict[verts.findTower_ind(v_i.land_wp)].add(verts.findTower_ind(v_i.land_wp).vehicle_index[v_i])
-        #     # v_i.loitering = False
             land_s = False
             if t_i.vehicle_array[v_ind].kill:
                 landed_drones.append(t_i.vehicle_array[v_ind])
-                # loiter_dict[t_i.discard(verts.findTower_ind(v_i.land_wp).vehicle_index[v_i])
-                # assert verts.findTower_ind(v_i.land_wp).no_active >= 0
 
+    # Remove landed drones from scheduler
     for v_i in landed_drones:
         verts.findTower_ind(v_i.land_wp).remove_vehicle(v_i)
         verts.findTower_ind(v_i.land_wp).requestLanded()
         vehicle_array.remove(v_i)
 
-    # for c_i in clear_requests:
-    #     c_i.no_active = clear_requests.count(c_i)
-    #     c_i.avail_slots = 3-c_i.no_active
-
+    # Update visuals on towers
     for t_i in verts.towers:
         out_art = t_i.towerUpdate()
         if out_art: artist_array.append(out_art)
-    # f = open('loiter_log.txt',"a")
-    # f.write(str(i) + "|\t")
-    # for l_i in loiter_dict:
-        # f.write(str(loiter_dict[l_i])+", "+str(l_i.avail_slots)+", "+str(l_i.no_active)+"|\t")
-    # f.write("\n")
     prev_time = i
 
     return artist_array
@@ -152,11 +141,10 @@ def policies(filename):
 no_towers = 2
 verts = Vertiports(POV_center=SF_GPS)
 verts.addPorts('Scenarios/areacre.txt')
-# f = open('loiter_log.txt',"w")
-verts.towerClusters(10)
+verts.towerClusters(10) # 10 tower clusters
 verts.plotTowers(ax)
 time_policy = []
-# vehicles, policy = policies('Scenarios/policy.txt')
+# Check these ports corresspond to the towers
 allowed_ports = ['WP52','WP555','WP322']
 second_tower = ['WP802','WP989','WP778']
 third_tower = ['WP94','WP661','WP9']
@@ -176,8 +164,10 @@ else:
         vehicle_array[v_i] = Aircraft(loc=tuple(verts.array[policy[v_i][0][0]].loc_gps)+(100,), POV_center=SF_GPS,col=(0,1,0),ax=ax,track=track,track_col=my_palette(i))
         i+=1
 
+# For showing video
 ani = FuncAnimation(fig, update, frames=500, interval=0.04, blit=True,repeat=False)
+plt.show(block=True)
+
+# For saving video
 # ani = FuncAnimation(fig, update, frames=1000,repeat=False)
 # ani.save('Two_tower_allocation_decen.mp4',writer = writer)
-plt.show(block=True)
-# plt.show(block=True)

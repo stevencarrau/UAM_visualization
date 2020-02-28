@@ -500,7 +500,7 @@ class Scheduler(Tower):
         return set([x[0] for x in self.trace[-2][9:12]])
 
     def activeRequest(self):
-        # assert self.schedule
+        # Pull the next request from the synthesis sequence
         self.requesting_agents = list(np.zeros(shape=(self.no_slots,), dtype=int))
         for v_i in self.vehicle_array:
             if self.vehicle_array[v_i].loitering:

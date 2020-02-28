@@ -15,12 +15,8 @@ class UpdateablePatchCollection(collections.PatchCollection):
         self.set_paths(self.patches)
         return self._paths
 
-# class Track():
-#     def __init__(self):
-#
 
 class Aircraft():
-
     def __init__(self, loc=(0,0,0), col=(0,0,0), track=None, POV_center=(0,0), ax=None, speed=0.25, track_col=(1,1,1), launch_time=0, land_tower=None, land_wp = None):
         self.map_center = POV_center
         self.scale = [1.0/1287500,1.0/462102]
@@ -84,6 +80,8 @@ class Aircraft():
             self.track_plot = l_i
 
     def update_track(self,track=None):
+
+        ## Update track contains the logic for whether an aircraft moves or not and at what speed.
         assert self.track
         artist_array = []
         if track:
@@ -108,25 +106,6 @@ class Aircraft():
                         self.track_times.append(time_lapse)
                         # artist_array += self.updateColor((1, 0.6, 0))
                 self.track.append(t_i)
-        # else:
-            # print('No track')
-            # time_lapse = self.world_time
-            # for idx, t_i in enumerate(self.track):
-            #     if idx == 0:
-            #         self.track_times[idx] = time_lapse
-            #     else:
-            #         if distance.euclidean(t_i, self.track[idx - 1]) < 1e-1 * self.speed:
-            #             self.speed = 0
-            #             self.track_times[idx] = time_lapse + 1e6
-            #             artist_array += self.updateColor((1, 0, 0))
-            #             self.stop_active = True
-            #         elif distance.euclidean(t_i, self.track[idx - 1]) < 5e-1 and self.land_flag:
-            #             self.speed /= 2
-            #             time_lapse += distance.euclidean(t_i, self.track[idx - 1]) / self.speed
-            #             self.track_times[idx] = time_lapse
-            #         else:
-            #             time_lapse += distance.euclidean(t_i, self.track[idx - 1]) / self.speed
-            #             self.track_times[idx] = time_lapse
 
         if len(self.track)>2:
             pass
@@ -159,9 +138,11 @@ class Aircraft():
         self.loitering = False
 
     def simulate(self, time,land_signal=None,operating_number=None):
+        # Simulate tracks the vehicle's motion is space
         track_x, track_y = map(list, zip(*self.track))
         near_path_x = track_x[0:2]
         near_path_y = track_y[0:2]
+        # If the landing tower has ben allocated
         if self.land_tower:
             if distance.euclidean(self.track[0],self.land_tower[0]) < self.land_tower[1]:
                 if not self.land_flag:
@@ -169,16 +150,19 @@ class Aircraft():
                     self.loiter_flag = True
                 else:
                     pass
+        # Define direction and magnitude of the vehicle path
         path_angle = np.arctan2(near_path_y[1]-near_path_y[0],near_path_x[1]-near_path_x[0])
         dxdy = [self.speed*time*np.cos(path_angle), self.speed*time*np.sin(path_angle)]
+        # Move the visual
         out_art = self.moveAircraft(dxdy)
         self.loc = (self.loc[0]+dxdy[0], self.loc[1]+dxdy[1], self.loc[2])
         self.loc_gps = self.coord_2_GPS(self.loc)
-        # print(self.track_times,self.land_flag)
+        # If the vehicles passes an intermediate waypoint, redefine the new path
         if self.world_time < self.track_times[1]:
             self.track[0] = [self.loc[0], self.loc[1]]
             out_art += self.update_track()
         else:
+            # For time policy vs waypoint policy
             if isinstance(self.policy[-1],list):
                 self.policy_time += 1
                 if self.policy_time < len(self.policy):
@@ -197,10 +181,12 @@ class Aircraft():
                     temp_track[0] = [self.loc[0], self.loc[1]]
                     temp_track[1] = self.track[1]
                 out_art += self.update_track(temp_track)
+        # If the vehicle is about its landing waypoint then land
         if land_signal:
             self.land_flag = True
             self.land(land_signal)
         self.world_time += time
+        # Count how long to let the vehicle sit before deleting it from the space
         if self.stop_active:
             self.stopped_time += 1
         if self.stopped_time > 5:
@@ -276,19 +262,11 @@ class Aircraft():
         return artist_array
 
     def removeAircraft(self):
-        # artist_array = [self.aircraft_artists[0]]
         artist_array = self.moveAircraft((1000,1000))
         self.aircraft_artists[0] = None
-        # for a_i in self.aircraft_artists[1:]:
-        #     a_i.remove()
-            # artist_array.append(a_i)
         self.kill = True
         return artist_array
 
     def assignLanding(self,wp):
-        temp_track = self.track
-        # if wp in temp_track:
-        #     temp_track[-1] = wp
-        # else:
         temp_track = [(self.loc[0],self.loc[1]),wp]
         self.update_track(temp_track)
